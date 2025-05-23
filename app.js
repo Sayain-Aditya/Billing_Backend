@@ -10,6 +10,7 @@ const commonRoutes = require('./src/routes/commonRoutes'); // ✅ Only declare o
 const hotelRoutes = require('./src/routes/hotelRoutes'); // ✅ Only declare once
 const destinationRoutes = require('./src/routes/destinationRoutes'); // ✅ Only declare once
 const iternaryRoutes = require('./src/routes/iternaryRoutes'); // ✅ Only declare once
+const Customer = require('./src/routes/customerRoutes')
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,7 @@ app.use('/gals', hotelRoutes); // ✅ Only use once
 app.use('/', destinationRoutes); // ✅ Only use once
 app.use('/dest', destinationRoutes); // ✅ Only use once
 app.use('/Iternary', iternaryRoutes); // 👈 lowercase
+app.use('/customer', Customer)
 app.listen(PORT, () => {
     console.log("🚀 Server started on port", PORT);
 });
