@@ -8,45 +8,6 @@ const {
 } = require("../utils/firebase");
 const Customer = require("../models/customer");
 
-// exports.addCustomer = async (req, res) => {
-//   try {
-//     const { name, phone, email, Address, WhatsApp } = req.body;
-
-//     if (!name || !phone || !email || !Address) {
-//       return res.status(400).json({ error: "Please fill all required fields." });
-//     }
-
-//     let imageUrl = "";
-
-//     // If file uploaded
-//     if (req.file) {
-//       const file = req.file;
-//       const storageRef = ref(storage, `customers/${Date.now()}_${file.originalname}`);
-
-//       const metadata = {
-//         contentType: file.mimetype,
-//       };
-
-//       await uploadBytes(storageRef, file.buffer, metadata);
-//       imageUrl = await getDownloadURL(storageRef);
-//     }
-
-//     const newCustomer = new Customer({
-//       name,
-//       phone,
-//       email,
-//       Address,
-//       WhatsApp,
-//       imageUrl,
-//     });
-
-//     const savedCustomer = await newCustomer.save();
-//     res.status(201).json(savedCustomer);
-//   } catch (error) {
-//     console.error("Error adding customer:", error);
-//     res.status(500).json({ error: "Server Error: " + error.message });
-//   }
-// };
 exports.addCustomer = async (req, res) => {
   console.log("Recived data:", req.body);
 
@@ -81,5 +42,76 @@ exports.getAllCustomer = async (req, res) => {
     res.status(200).json({ success: true, data: custom });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.deleteCustomer = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deleteCustomer = await Customer.findByIdAndDelete(id);
+    if (!deleteCustomer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Customer deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+exports.getCustomerId = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const cust = await Customer.findById(id);
+    if (!cust) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+    res.status(200).json({ success: true, data: cust });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+exports.updateCustomer = async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, email, Address, WhatsApp } = req.body;
+  try {
+    const updateCustomer = await Customer.findByIdAndUpdate(
+      id,
+      {
+        name,
+        phone,
+        email,
+        Address,
+        WhatsApp,
+      },
+      { new: true, runValidators: true }
+    );
+    if (!updateCustomer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not Found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: updateCustomer,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
