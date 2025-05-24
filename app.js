@@ -15,8 +15,8 @@ const Customer = require("./src/routes/customerRoutes");
 const app = express();
 const allowedOrigins = [
   "http://localhost:5000",
-  "https://crm-two-beige.vercel.app/",
-  "https://billing-backend-seven.vercel.app/",
+  "https://crm-two-beige.vercel.app",
+  "https://billing-backend-seven.vercel.app",
 ];
 app.use(
   cors({
