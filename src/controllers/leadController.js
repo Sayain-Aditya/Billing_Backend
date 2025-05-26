@@ -64,7 +64,11 @@ exports.addLead = async (req, res) => {
 exports.getAllLead = async (req, res) => {
   try {
     const led = await Lead.find();
-    res.status(200).json({ success: true, data: led });
+    const leadsWithSrNo = led.map((lead, index) => ({
+      srNo: index + 1,
+      ...lead.toObject(),
+    }));
+    res.status(200).json({ success: true, data: leadsWithSrNo });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
