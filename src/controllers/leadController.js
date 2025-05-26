@@ -64,11 +64,7 @@ exports.addLead = async (req, res) => {
 exports.getAllLead = async (req, res) => {
   try {
     const led = await Lead.find();
-    const leadsWithSrNo = led.map((lead, index) => ({
-      srNo: index + 1,
-      ...lead.toObject(),
-    }));
-    res.status(200).json({ success: true, data: leadsWithSrNo });
+    res.status(200).json({ success: true, data: led });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -167,25 +163,5 @@ exports.updateLead = async (req, res) => {
       success: false,
       message: error.message,
     });
-  }
-};
-exports.updateLeadPositions = async (req, res) => {
-  const { leads } = req.body;
-
-  if (!Array.isArray(leads)) {
-    return res.status(400).json({ message: "Invalid leads array" });
-  }
-
-  try {
-    const updatePromises = leads.map((lead, index) =>
-      Lead.findByIdAndUpdate(lead.id, { position: index + 1 })
-    );
-
-    await Promise.all(updatePromises);
-
-    res.status(200).json({ message: "Positions updated successfully" });
-  } catch (error) {
-    console.error("Error updating positions:", error);
-    res.status(500).json({ message: "Failed to update positions" });
   }
 };
