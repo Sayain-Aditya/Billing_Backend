@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+
 const fcmTokenSchema = new mongoose.Schema({
     token: {
         type: String,
@@ -16,4 +17,5 @@ const fcmTokenSchema = new mongoose.Schema({
         expires: '30d' // Token will expire after 30 days
     }
 });
+
 module.exports = mongoose.model("FCMToken", fcmTokenSchema);

@@ -59,7 +59,7 @@ exports.addLead = async (req, res) => {
     await newLead.save();
 
     // ✅ Send FCM notification
-    const tokens = await Token.find().select("token -_id");
+    const tokens = await token.find().select("token -_id");
     const payload = {
       notification: {
         title: "New Lead Created",
