@@ -1,6 +1,7 @@
-const expree = require('express');
+const express = require('express');
 const { saveToken } = require('../controllers/fcmtokenController');
-const router = exprees.Router();
+
+const router = express.Router();
 
 // Route to save FCM token
 router.post('/save', saveToken);

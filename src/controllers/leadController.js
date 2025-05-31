@@ -85,6 +85,15 @@ exports.addLead = async (req, res) => {
   }
 };
 
+exports.getAllLead = async (req, res) => {
+  try {
+    const led = await Lead.find();
+    res.status(200).json({ success: true, data: led });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.deleteLead = async (req, res) => {
   const { id } = req.params;
   try {
