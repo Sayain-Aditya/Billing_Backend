@@ -1,7 +1,8 @@
 const Lead = require("../models/lead"); // Fix variable name
+const token = require("../models/fcmToken"); // Fix variable name
 
 exports.addLead = async (req, res) => {
-  console.log("Recived data:", req.body); // Fix syntax
+  console.log("Received data:", req.body);
 
   const {
     name,
@@ -38,6 +39,7 @@ exports.addLead = async (req, res) => {
       message: "All required fields must be provided.",
     });
   }
+
   try {
     const newLead = new Lead({
       name,
@@ -53,19 +55,32 @@ exports.addLead = async (req, res) => {
       update,
       notes,
     });
+
     await newLead.save();
-    res.status(201).json({ success: true, data: newLead }); // Fix typo
+
+    // ✅ Send FCM notification
+    const tokens = await Token.find().select("token -_id");
+    const payload = {
+      notification: {
+        title: "New Lead Created",
+        body: `${name} submitted a new enquiry.`,
+      },
+    };
+
+    for (const t of tokens) {
+      try {
+        await admin.messaging().send({
+          token: t.token,
+          ...payload,
+        });
+      } catch (err) {
+        console.error("Error sending notification to token:", t.token, err.message);
+      }
+    }
+
+    res.status(201).json({ success: true, data: newLead });
   } catch (error) {
     console.error("Error saving:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getAllLead = async (req, res) => {
-  try {
-    const led = await Lead.find();
-    res.status(200).json({ success: true, data: led });
-  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
