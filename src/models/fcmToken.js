@@ -4,33 +4,18 @@ const fcmTokenSchema = new mongoose.Schema({
     token: {
         type: String,
         required: true,
-        unique: true,
-        trim: true
+        unique: true
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false
+        required: true
     },
     createdAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        expires: '30d' // Token will expire after 30 days
     }
-}, {
-    timestamps: true // Add timestamps
 });
 
-// Add index
-fcmTokenSchema.index({ token: 1 }, { unique: true });
-
-// Add pre-save middleware for validation
-fcmTokenSchema.pre('save', function(next) {
-    if (!this.token) {
-        next(new Error('Token is required'));
-    }
-    next();
-});
-
-const FCMToken = mongoose.model('FCMToken', fcmTokenSchema);
-
-module.exports = FCMToken;
+module.exports = mongoose.model("FCMToken", fcmTokenSchema);

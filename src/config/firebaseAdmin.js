@@ -1,12 +1,9 @@
+// firebaseAdmin.js
 const admin = require("firebase-admin");
-const serviceAccount = require("./firebase-service-account.json");
+const serviceAccount = require("./config/firebase-service-account.json"); // path to your downloaded key
 
-// Check if Firebase Admin is already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://hotel-buddha-avenue-default-rtdb.firebaseio.com"
-  });
-}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 module.exports = admin;
