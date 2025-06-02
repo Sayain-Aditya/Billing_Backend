@@ -1,15 +1,8 @@
-require('dotenv').config();
 const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-service-account.json");
 
-// Parse the service account credentials from the environment variable
-const serviceAccount = JSON.parse(process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT);
-
-// Check if Firebase Admin is already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://hotel-buddha-avenue-default-rtdb.firebaseio.com"
-  });
-}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 module.exports = admin;
