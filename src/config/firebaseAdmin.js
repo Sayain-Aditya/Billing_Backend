@@ -1,8 +1,5 @@
-require('dotenv').config();
 const admin = require("firebase-admin");
-
-// Parse the service account credentials from the environment variable
-const serviceAccount = JSON.parse(process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT);
+const serviceAccount = require("./firebase-service-account.json");
 
 // Check if Firebase Admin is already initialized
 if (!admin.apps.length) {
