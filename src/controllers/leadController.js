@@ -1,6 +1,6 @@
 const Lead = require("../models/lead");
-const FCMToken = require("../models/fcmToken"); // Fix the variable name
-const admin = require("../config/firebaseAdmin");
+const FCMToken = require("../models/fcmToken");
+const admin = require("../config/firebase-admin");
 
 exports.addLead = async (req, res) => {
   console.log("Received data:", req.body);
