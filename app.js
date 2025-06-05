@@ -12,6 +12,7 @@ const destinationRoutes = require("./src/routes/destinationRoutes"); // ✅ Only
 const iternaryRoutes = require("./src/routes/iternaryRoutes"); // ✅ Only declare once
 const Customer = require("./src/routes/customerRoutes");
 const leadRoutes = require("./src/routes/leadRoutes");
+const pushRoutes = require('./src/routes/pushRoutes');
 
 const app = express();
 const allowedOrigins = [
@@ -48,6 +49,7 @@ app.use("/dest", destinationRoutes); // ✅ Only use once
 app.use("/Iternary", iternaryRoutes); // 👈 lowercase
 app.use("/customer", Customer);
 app.use("/lead", leadRoutes);
+app.use('/push', pushRoutes);
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
