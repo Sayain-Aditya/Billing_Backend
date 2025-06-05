@@ -34,8 +34,7 @@ exports.addLead = async (req, res) => {
     !status ||
     !calldate ||
     !update ||
-    !notes ||
-    !subscription
+    !notes
   ) {
     console.log("Missing Required fields");
     return res.status(400).json({
@@ -184,6 +183,26 @@ exports.updateLead = async (req, res) => {
     subscription,
   } = req.body;
 
+  if (
+    !name ||
+    !email ||
+    !phone ||
+    !Address ||
+    !enquiry ||
+    !followUpDate ||
+    !followUpStatus ||
+    !meetingdate ||
+    !status ||
+    !calldate ||
+    !update ||
+    !notes
+  ) {
+    console.log("Missing Required fields");
+    return res.status(400).json({
+      success: false,
+      message: "All required fields must be provided.",
+    });
+  }
   try {
     const updatedLead = await Lead.findByIdAndUpdate(
       id,
