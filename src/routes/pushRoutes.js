@@ -1,30 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const webpush = require('../push');
-const UserSubscription = require('../models/UserSubscription');
 
 let subscriptions = []; // In production, store in DB
 
 // Endpoint to save subscription
-router.post('/subscribe', async (req, res) => {
-  const { email, subscription } = req.body;
-  if (!email || !subscription) return res.status(400).json({ error: 'Email and subscription required' });
-
-  let userSub = await UserSubscription.findOne({ email });
-  if (userSub) {
-    // Add subscription if not already present
-    const exists = userSub.subscriptions.some(
-      (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
-    );
-    if (!exists) {
-      userSub.subscriptions.push(subscription);
-      await userSub.save();
-    }
-  } else {
-    userSub = new UserSubscription({ email, subscriptions: [subscription] });
-    await userSub.save();
-  }
-  res.status(201).json({ message: 'Subscription saved' });
+router.post('/subscribe', (req, res) => {
+  const subscription = req.body;
+  subscriptions.push(subscription);
+  res.status(201).json({});
 });
 
 // Endpoint to trigger a notification to all subscribers

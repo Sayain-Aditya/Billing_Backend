@@ -2,7 +2,6 @@ const Lead = require("../models/lead"); // Fix variable name
 const Reminder = require('../models/reminder');
 const schedule = require('node-schedule');
 const webpush = require('../push');
-const UserSubscription = require('../models/UserSubscription');
 
 exports.addLead = async (req, res) => {
   console.log("Recived data:", req.body); // Fix syntax
@@ -35,7 +34,8 @@ exports.addLead = async (req, res) => {
     !status ||
     !calldate ||
     !update ||
-    !notes
+    !notes ||
+    !subscription
   ) {
     console.log("Missing Required fields");
     return res.status(400).json({
@@ -61,49 +61,26 @@ exports.addLead = async (req, res) => {
     await newLead.save();
 
     if (subscription && followUpDate) {
-      // Ensure followUpDate is stored as UTC
-      const followUpDateUTC = new Date(followUpDate).toISOString();
-      // Try to find an existing reminder for this lead and followUpDate
-      let reminder = await Reminder.findOne({ leadId: newLead._id, followUpDate: followUpDateUTC });
-      if (reminder) {
-        // Add subscription if not already present
-        const exists = reminder.subscriptions.some(
-          (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
-        );
-        if (!exists) {
-          reminder.subscriptions.push(subscription);
-          await reminder.save();
-        }
-      } else {
-        reminder = new Reminder({
-          leadId: newLead._id,
-          followUpDate: followUpDateUTC,
-          subscriptions: [subscription],
-          message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-        });
-        await reminder.save();
-      }
+      const reminder = new Reminder({
+        leadId: newLead._id,
+        followUpDate,
+        subscription,
+        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
+      });
+      await reminder.save();
+
       // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDateUTC), async function() {
-        for (const sub of reminder.subscriptions) {
-          try {
-            await webpush.sendNotification(
-              sub,
-              JSON.stringify({
-                title: 'Lead Follow-up Reminder',
-                body: reminder.message,
-              })
-            );
-          } catch (err) {
-            console.error('Push notification error:', err);
-            // Remove the subscription if invalid
-            if (err.statusCode === 410 || err.statusCode === 404) {
-              reminder.subscriptions = reminder.subscriptions.filter(
-                (s) => JSON.stringify(s) !== JSON.stringify(sub)
-              );
-              await reminder.save();
-            }
-          }
+      schedule.scheduleJob(new Date(followUpDate), async function() {
+        try {
+          await webpush.sendNotification(
+            subscription,
+            JSON.stringify({
+              title: 'Lead Follow-up Reminder',
+              body: reminder.message,
+            })
+          );
+        } catch (err) {
+          console.error('Push notification error:', err);
         }
       });
     }
@@ -184,26 +161,6 @@ exports.updateLead = async (req, res) => {
     subscription,
   } = req.body;
 
-  if (
-    !name ||
-    !email ||
-    !phone ||
-    !Address ||
-    !enquiry ||
-    !followUpDate ||
-    !followUpStatus ||
-    !meetingdate ||
-    !status ||
-    !calldate ||
-    !update ||
-    !notes
-  ) {
-    console.log("Missing Required fields");
-    return res.status(400).json({
-      success: false,
-      message: "All required fields must be provided.",
-    });
-  }
   try {
     const updatedLead = await Lead.findByIdAndUpdate(
       id,
@@ -231,49 +188,26 @@ exports.updateLead = async (req, res) => {
     }
 
     if (subscription && followUpDate) {
-      // Ensure followUpDate is stored as UTC
-      const followUpDateUTC = new Date(followUpDate).toISOString();
-      // Try to find an existing reminder for this lead and followUpDate
-      let reminder = await Reminder.findOne({ leadId: updatedLead._id, followUpDate: followUpDateUTC });
-      if (reminder) {
-        // Add subscription if not already present
-        const exists = reminder.subscriptions.some(
-          (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
-        );
-        if (!exists) {
-          reminder.subscriptions.push(subscription);
-          await reminder.save();
-        }
-      } else {
-        reminder = new Reminder({
-          leadId: updatedLead._id,
-          followUpDate: followUpDateUTC,
-          subscriptions: [subscription],
-          message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-        });
-        await reminder.save();
-      }
+      const reminder = new Reminder({
+        leadId: updatedLead._id,
+        followUpDate,
+        subscription,
+        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
+      });
+      await reminder.save();
+
       // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDateUTC), async function() {
-        for (const sub of reminder.subscriptions) {
-          try {
-            await webpush.sendNotification(
-              sub,
-              JSON.stringify({
-                title: 'Lead Follow-up Reminder',
-                body: reminder.message,
-              })
-            );
-          } catch (err) {
-            console.error('Push notification error:', err);
-            // Remove the subscription if invalid
-            if (err.statusCode === 410 || err.statusCode === 404) {
-              reminder.subscriptions = reminder.subscriptions.filter(
-                (s) => JSON.stringify(s) !== JSON.stringify(sub)
-              );
-              await reminder.save();
-            }
-          }
+      schedule.scheduleJob(new Date(followUpDate), async function() {
+        try {
+          await webpush.sendNotification(
+            subscription,
+            JSON.stringify({
+              title: 'Lead Follow-up Reminder',
+              body: reminder.message,
+            })
+          );
+        } catch (err) {
+          console.error('Push notification error:', err);
         }
       });
     }
@@ -289,34 +223,3 @@ exports.updateLead = async (req, res) => {
     });
   }
 };
-
-async function sendNotificationToUser(email, payload) {
-  const userSub = await UserSubscription.findOne({ email });
-  if (userSub) {
-    // We'll collect valid subscriptions here
-    let updated = false;
-    let validSubscriptions = [];
-
-    for (const sub of userSub.subscriptions) {
-      try {
-        await webpush.sendNotification(sub, JSON.stringify(payload));
-        validSubscriptions.push(sub); // Only keep if successful
-      } catch (err) {
-        // If subscription is invalid, do not add to validSubscriptions
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          updated = true; // Mark that we need to update the DB
-          console.log('Removed invalid subscription for', email);
-        } else {
-          // For other errors, you may want to log or handle differently
-          validSubscriptions.push(sub);
-        }
-      }
-    }
-
-    // If any invalid subscriptions were found, update the DB
-    if (updated) {
-      userSub.subscriptions = validSubscriptions;
-      await userSub.save();
-    }
-  }
-}
