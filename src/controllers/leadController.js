@@ -2,6 +2,7 @@ const Lead = require("../models/lead"); // Fix variable name
 const Reminder = require('../models/reminder');
 const schedule = require('node-schedule');
 const webpush = require('../push');
+const UserSubscription = require('../models/UserSubscription');
 
 exports.addLead = async (req, res) => {
   console.log("Recived data:", req.body); // Fix syntax
@@ -288,3 +289,34 @@ exports.updateLead = async (req, res) => {
     });
   }
 };
+
+async function sendNotificationToUser(email, payload) {
+  const userSub = await UserSubscription.findOne({ email });
+  if (userSub) {
+    // We'll collect valid subscriptions here
+    let updated = false;
+    let validSubscriptions = [];
+
+    for (const sub of userSub.subscriptions) {
+      try {
+        await webpush.sendNotification(sub, JSON.stringify(payload));
+        validSubscriptions.push(sub); // Only keep if successful
+      } catch (err) {
+        // If subscription is invalid, do not add to validSubscriptions
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          updated = true; // Mark that we need to update the DB
+          console.log('Removed invalid subscription for', email);
+        } else {
+          // For other errors, you may want to log or handle differently
+          validSubscriptions.push(sub);
+        }
+      }
+    }
+
+    // If any invalid subscriptions were found, update the DB
+    if (updated) {
+      userSub.subscriptions = validSubscriptions;
+      await userSub.save();
+    }
+  }
+}
