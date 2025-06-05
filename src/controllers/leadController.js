@@ -61,26 +61,49 @@ exports.addLead = async (req, res) => {
     await newLead.save();
 
     if (subscription && followUpDate) {
-      const reminder = new Reminder({
-        leadId: newLead._id,
-        followUpDate,
-        subscription,
-        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-      });
-      await reminder.save();
-
+      // Ensure followUpDate is stored as UTC
+      const followUpDateUTC = new Date(followUpDate).toISOString();
+      // Try to find an existing reminder for this lead and followUpDate
+      let reminder = await Reminder.findOne({ leadId: newLead._id, followUpDate: followUpDateUTC });
+      if (reminder) {
+        // Add subscription if not already present
+        const exists = reminder.subscriptions.some(
+          (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
+        );
+        if (!exists) {
+          reminder.subscriptions.push(subscription);
+          await reminder.save();
+        }
+      } else {
+        reminder = new Reminder({
+          leadId: newLead._id,
+          followUpDate: followUpDateUTC,
+          subscriptions: [subscription],
+          message: `Follow-up reminder for ${name} regarding ${enquiry}`,
+        });
+        await reminder.save();
+      }
       // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDate), async function() {
-        try {
-          await webpush.sendNotification(
-            subscription,
-            JSON.stringify({
-              title: 'Lead Follow-up Reminder',
-              body: reminder.message,
-            })
-          );
-        } catch (err) {
-          console.error('Push notification error:', err);
+      schedule.scheduleJob(new Date(followUpDateUTC), async function() {
+        for (const sub of reminder.subscriptions) {
+          try {
+            await webpush.sendNotification(
+              sub,
+              JSON.stringify({
+                title: 'Lead Follow-up Reminder',
+                body: reminder.message,
+              })
+            );
+          } catch (err) {
+            console.error('Push notification error:', err);
+            // Remove the subscription if invalid
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              reminder.subscriptions = reminder.subscriptions.filter(
+                (s) => JSON.stringify(s) !== JSON.stringify(sub)
+              );
+              await reminder.save();
+            }
+          }
         }
       });
     }
@@ -188,26 +211,49 @@ exports.updateLead = async (req, res) => {
     }
 
     if (subscription && followUpDate) {
-      const reminder = new Reminder({
-        leadId: updatedLead._id,
-        followUpDate,
-        subscription,
-        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-      });
-      await reminder.save();
-
+      // Ensure followUpDate is stored as UTC
+      const followUpDateUTC = new Date(followUpDate).toISOString();
+      // Try to find an existing reminder for this lead and followUpDate
+      let reminder = await Reminder.findOne({ leadId: updatedLead._id, followUpDate: followUpDateUTC });
+      if (reminder) {
+        // Add subscription if not already present
+        const exists = reminder.subscriptions.some(
+          (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
+        );
+        if (!exists) {
+          reminder.subscriptions.push(subscription);
+          await reminder.save();
+        }
+      } else {
+        reminder = new Reminder({
+          leadId: updatedLead._id,
+          followUpDate: followUpDateUTC,
+          subscriptions: [subscription],
+          message: `Follow-up reminder for ${name} regarding ${enquiry}`,
+        });
+        await reminder.save();
+      }
       // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDate), async function() {
-        try {
-          await webpush.sendNotification(
-            subscription,
-            JSON.stringify({
-              title: 'Lead Follow-up Reminder',
-              body: reminder.message,
-            })
-          );
-        } catch (err) {
-          console.error('Push notification error:', err);
+      schedule.scheduleJob(new Date(followUpDateUTC), async function() {
+        for (const sub of reminder.subscriptions) {
+          try {
+            await webpush.sendNotification(
+              sub,
+              JSON.stringify({
+                title: 'Lead Follow-up Reminder',
+                body: reminder.message,
+              })
+            );
+          } catch (err) {
+            console.error('Push notification error:', err);
+            // Remove the subscription if invalid
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              reminder.subscriptions = reminder.subscriptions.filter(
+                (s) => JSON.stringify(s) !== JSON.stringify(sub)
+              );
+              await reminder.save();
+            }
+          }
         }
       });
     }

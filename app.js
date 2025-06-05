@@ -13,6 +13,9 @@ const iternaryRoutes = require("./src/routes/iternaryRoutes"); // ✅ Only decla
 const Customer = require("./src/routes/customerRoutes");
 const leadRoutes = require("./src/routes/leadRoutes");
 const pushRoutes = require('./src/routes/pushRoutes');
+const Reminder = require('./src/models/reminder');
+const schedule = require('node-schedule');
+const webpush = require('./src/push');
 
 const app = express();
 const allowedOrigins = [
@@ -50,6 +53,36 @@ app.use("/Iternary", iternaryRoutes); // 👈 lowercase
 app.use("/customer", Customer);
 app.use("/lead", leadRoutes);
 app.use('/push', pushRoutes);
+
+// Function to schedule a reminder
+function scheduleReminder(reminder) {
+  // Only schedule if the time is in the future
+  if (new Date(reminder.followUpDate) > new Date()) {
+    schedule.scheduleJob(new Date(reminder.followUpDate), async function() {
+      try {
+        await webpush.sendNotification(
+          reminder.subscription,
+          JSON.stringify({
+            title: 'Lead Follow-up Reminder',
+            body: reminder.message,
+          })
+        );
+      } catch (err) {
+        console.error('Push notification error:', err);
+        // Remove the reminder if the subscription is invalid
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await Reminder.deleteOne({ _id: reminder._id });
+        }
+      }
+    });
+  }
+}
+
+// On server startup, re-schedule all future reminders
+Reminder.find({ followUpDate: { $gt: new Date() } }).then(reminders => {
+  reminders.forEach(scheduleReminder);
+});
+
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
