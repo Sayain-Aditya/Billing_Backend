@@ -2,7 +2,15 @@
 
 const { initializeApp } = require("firebase/app");
 const { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } = require("firebase/storage");
+const admin = require('firebase-admin');
 
+// Firebase Admin initialization for authentication
+const serviceAccount = require('../config/firebase-service-account.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+// Firebase Client initialization for storage
 const firebaseConfig = {
   apiKey: "AIzaSyBXjRhtr7xbTGTpuT07BJe_0QBvJSCq8_o",
   authDomain: "billing-eef2f.firebaseapp.com",
@@ -17,4 +25,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 
-module.exports = { storage, ref, uploadBytes, getDownloadURL, deleteObject };
+// Export both admin (for auth) and storage functions
+module.exports = { 
+  admin,
+  storage, 
+  ref, 
+  uploadBytes, 
+  getDownloadURL, 
+  deleteObject 
+};
