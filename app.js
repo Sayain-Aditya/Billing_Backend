@@ -1,7 +1,7 @@
-const express = require("express");
+require('dotenv').config();
+const express = require('express');
 const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const connectDB = require("./src/config/db");
 
 const productRoutes = require("./src/routes/productRoutes");
@@ -35,7 +35,6 @@ app.use(
   })
 );
 app.use(express.json());
-dotenv.config();
 connectDB();
 
 const PORT = process.env.PORT || 5000;
@@ -52,6 +51,16 @@ app.use("/customer", Customer);
 app.use("/lead", leadRoutes);
 app.use('/push', pushRoutes);
 app.use("/car", carRoutes); // ✅ Only use once
+
+// Backend error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: true,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
 app.listen(PORT, () => {
-  console.log("🚀 Server started on port", PORT);
+  console.log(`Server is running on port ${PORT}`);
 });

@@ -8,5 +8,6 @@ const ReminderSchema = new mongoose.Schema({
   serviceReminder: String,
   subscription: Object,
   message: String,
+  status:{ type: String, default: 'pending' },
 });
 module.exports = mongoose.model('Reminder', ReminderSchema);
