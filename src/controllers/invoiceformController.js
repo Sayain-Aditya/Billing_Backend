@@ -133,27 +133,26 @@ exports.updateInvoice=async(req,res)=>{
         })
     }
 }
-exports.deleteInvoice=async(req,res)=>{
-    try {
-  
-        const invoice=await InvoiceForm.findById(req.params.id);
-        if (!invoice) {
-            return res.status(404).json({ error: "Invoice not found" });
-
-        }
-        await InvoiceForm.findByIdAndDelete(req.params.id);
-        return res.status(200).json({
-            message: "Invoice deleted successfully",
-            success: true
-        })
-    } catch (error) {
-        console.log('Error while deleting invoice', error);
-        return res.status(500).json({
-            message:'Error while deleting invoice',
-            error:error,
-            success:false
-        })
+exports.deleteInvoice = async (req, res) => {
+  try {
+    const invoice = await InvoiceForm.findById(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
     }
+    invoice.isActive = false;
+    await invoice.save();
+    return res.status(200).json({
+      message: "Invoice soft-deleted successfully",
+      success: true
+    });
+  } catch (error) {
+    console.log('Error while deleting invoice', error);
+    return res.status(500).json({
+      message: 'Error while deleting invoice',
+      error: error,
+      success: false
+    });
+  }
 }
 exports.getallInvoice=async(req,res)=>{
     try {
@@ -162,7 +161,7 @@ exports.getallInvoice=async(req,res)=>{
 
         // Calculate how many documents to skip
         const skip = (page - 1) * limit;
-        const invoices = await InvoiceForm.find().skip(skip).limit(limit).sort({ createdAt: -1});
+        const invoices = await InvoiceForm.find({ isActive: true }).skip(skip).limit(limit).sort({ createdAt: -1 });
         const total = await InvoiceForm.countDocuments();
         if(!invoices && invoices.length===0){
             return res.status(404).json({
