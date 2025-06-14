@@ -248,3 +248,24 @@ exports.getInvoiceById = async (req, res) => {
         });
     }
 };
+
+exports.getNextInvoiceNumber = async (req, res) => {
+  try {
+    // Find the invoice with the highest invoiceNumber (assuming it's numeric)
+    const lastInvoice = await InvoiceForm.findOne().sort({ createdAt: -1 });
+    let nextNumber = 1;
+
+    if (lastInvoice && lastInvoice.invoiceNumber) {
+      // If invoiceNumber is a string, parse it as integer
+      const lastNum = parseInt(lastInvoice.invoiceNumber, 10);
+      if (!isNaN(lastNum)) {
+        nextNumber = lastNum + 1;
+      }
+    }
+
+    // You can format the invoice number as needed, e.g., with leading zeros
+    res.json({ nextInvoiceNumber: String(nextNumber) });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get next invoice number" });
+  }
+};
