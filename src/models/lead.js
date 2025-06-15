@@ -12,7 +12,7 @@ const leadSchema = new mongoose.Schema(
     meetingdate: { type: Date, required: true }, 
     status: { type: String, required: true },
     calldate: { type: Date, required: true }, 
-    update: { type: Date, required: true },
+    // update: { type: Date, required: true },
     notes: { type: String, required: true },
   },
   { timestamps: true, strict: true }

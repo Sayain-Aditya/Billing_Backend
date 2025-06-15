@@ -17,7 +17,7 @@ exports.addLead = async (req, res) => {
     meetingdate,
     status,
     calldate,
-    update,
+    // update,
     notes,
     subscription,
   } = req.body;
@@ -33,7 +33,7 @@ exports.addLead = async (req, res) => {
     !meetingdate ||
     !status ||
     !calldate ||
-    !update ||
+    // !update ||
     !notes ||
     !subscription
   ) {
@@ -55,7 +55,7 @@ exports.addLead = async (req, res) => {
       meetingdate,
       status,
       calldate,
-      update,
+      // update,
       notes,
     });
     await newLead.save();
@@ -156,7 +156,7 @@ exports.updateLead = async (req, res) => {
     meetingdate,
     status,
     calldate,
-    update,
+    // update,
     notes,
     subscription,
   } = req.body;
@@ -175,7 +175,7 @@ exports.updateLead = async (req, res) => {
         meetingdate,
         status,
         calldate,
-        update,
+        // update,
         notes,
       },
       { new: true, runValidators: true }
