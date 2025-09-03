@@ -1,30 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const webpush = require('../push');
 
-let subscriptions = []; // In production, store in DB
+let subscriptions = [];
 
-// Endpoint to save subscription
+// Endpoint to save subscription (disabled)
 router.post('/subscribe', (req, res) => {
-  const subscription = req.body;
-  subscriptions.push(subscription);
-  res.status(201).json({});
+  console.log('Push notifications disabled');
+  res.status(201).json({ message: 'Push notifications disabled' });
 });
 
-// Endpoint to trigger a notification to all subscribers
+// Endpoint to trigger a notification (disabled)
 router.post('/notify', async (req, res) => {
-  const { title, body } = req.body;
-  const payload = JSON.stringify({ title, body });
-
-  // Send notification to all subscribers
-  for (const sub of subscriptions) {
-    try {
-      await webpush.sendNotification(sub, payload);
-    } catch (err) {
-      console.error('Push error:', err);
-    }
-  }
-  res.status(200).json({ message: 'Notifications sent' });
+  console.log('Push notifications disabled');
+  res.status(200).json({ message: 'Push notifications disabled' });
 });
 
 module.exports = router;

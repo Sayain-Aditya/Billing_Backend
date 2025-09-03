@@ -1,11 +1,5 @@
 const express = require("mongoose");
-const {
-  storage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} = require("../utils/firebase");
+
 const Customer = require("../models/customer");
 
 exports.addCustomer = async (req, res) => {

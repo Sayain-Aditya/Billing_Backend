@@ -1,11 +1,6 @@
 const express = require("express");
-const {
-  storage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} = require("../utils/firebase");
+const path = require('path');
+const fs = require('fs');
 const DestinationModel = require("../models/destination"); // ✅ Model for destinations
 const ImageModel = require("../models/dest"); // ✅ Correct model for images
 
@@ -25,17 +20,23 @@ exports.uploadImages = async (req, res) => {
     const savedImages = [];
 
     for (const file of files) {
-      const fileRef = ref(storage, `images/destinations/${file.originalname}`);
-      await uploadBytes(fileRef, file.buffer);
-      const url = await getDownloadURL(fileRef);
+      const fileName = Date.now() + '-' + file.originalname;
+      const filePath = path.join(__dirname, '../../uploads/destinations', fileName);
+      
+      const uploadsDir = path.join(__dirname, '../../uploads/destinations');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(filePath, file.buffer);
 
       const newImage = await ImageModel.create({
-        url,
+        url: `/uploads/destinations/${fileName}`,
         name: file.originalname,
-        destId, // ✅ Associate image with Destination
+        destId,
       });
 
-      savedImages.push(newImage); // ✅ Add to result array
+      savedImages.push(newImage);
     }
 
     res.status(201).json({
@@ -57,9 +58,10 @@ exports.deleteImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    const imageName = imageRecord.name;
-    const fileRef = ref(storage, `images/destinations/${imageName}`);
-    await deleteObject(fileRef);
+    const filePath = path.join(__dirname, '../../', imageRecord.url);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     await ImageModel.findByIdAndDelete(id);
 

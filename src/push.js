@@ -1,13 +1,7 @@
-const webpush = require('web-push');
-require('dotenv').config(); // Add this line to load .env
-
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
-
-webpush.setVapidDetails(
-  'mailto:your-email@example.com',
-  publicVapidKey,
-  privateVapidKey
-);
-
-module.exports = webpush;
+// Push notifications disabled - no VAPID keys configured
+module.exports = {
+  sendNotification: () => {
+    console.log('Push notifications disabled');
+    return Promise.resolve();
+  }
+};

@@ -1,8 +1,9 @@
 const express = require('express');
-const { storage, ref, uploadBytes, getDownloadURL, deleteObject } = require('../utils/firebase');
 const ImageModel = require('../models/common');
+const path = require('path');
+const fs = require('fs');
 
-// Upload Images Controller
+// Upload Images Controller (using local storage)
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -14,14 +15,25 @@ exports.uploadImages = async (req, res) => {
     const savedImages = [];
 
     for (const file of files) {
-      const fileRef = ref(storage, `images/commons/${file.originalname}`);
-      await uploadBytes(fileRef, file.buffer);
-      const url = await getDownloadURL(fileRef);
-
+      // Save file locally
+      const fileName = Date.now() + '-' + file.originalname;
+      const filePath = path.join(__dirname, '../../uploads', fileName);
+      
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '../../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(filePath, file.buffer);
+      
       const newImage = await ImageModel.create({
-        url,
-        name: file.originalname, // ✅ Store name
-      });}
+        url: `/uploads/${fileName}`,
+        name: file.originalname,
+      });
+      
+      savedImages.push(newImage);
+    }
 
     res.status(201).json({
       message: 'Images uploaded successfully',
@@ -43,9 +55,11 @@ exports.deleteImage = async (req, res) => {
       return res.status(404).json({ message: 'Image not found' });
     }
 
-    const imageName = imageRecord.name; // ✅ use this instead of extracting from URL
-    const fileRef = ref(storage, `images/commons/${imageName}`);
-    await deleteObject(fileRef);
+    // Delete local file
+    const filePath = path.join(__dirname, '../../', imageRecord.url);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     await ImageModel.findByIdAndDelete(id);
 
@@ -58,7 +72,7 @@ exports.deleteImage = async (req, res) => {
 
 exports.getAllImages = async (req, res) => {
   try {
-    const images = await ImageModel.find(); // Or .find().sort({ createdAt: -1 }) if you want latest first
+    const images = await ImageModel.find();
     res.status(200).json(images);
   } catch (error) {
     console.error(error);

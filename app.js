@@ -15,6 +15,7 @@ const leadRoutes = require("./src/routes/leadRoutes");
 const pushRoutes = require('./src/routes/pushRoutes');
 const carRoutes = require("./src/routes/carRoutes"); // ✅ Only declare once
 
+
 const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
@@ -35,6 +36,12 @@ app.use(
   })
 );
 app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+app.use('/uploads/destinations', express.static('uploads/destinations'));
+app.use('/uploads/hotels', express.static('uploads/hotels'));
+
 connectDB();
 
 const PORT = process.env.PORT || 5000;
@@ -51,6 +58,7 @@ app.use("/customer", Customer);
 app.use("/lead", leadRoutes);
 app.use('/push', pushRoutes);
 app.use("/car", carRoutes); // ✅ Only use once
+
 
 // Backend error handler
 app.use((err, req, res, next) => {
