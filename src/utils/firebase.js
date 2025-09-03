@@ -12,7 +12,7 @@ admin.initializeApp({
 
 // Firebase Client initialization for storage
 const firebaseConfig = {
-  apiKey: "AIzaSyBXjRhtr7xbTGTpuT07BJe_0QBvJSCq8_o",
+  apiKey: "AIzaSyBXpJ1dv_3SDq9TVa-_hoSoT4CFteNJsBM",
   authDomain: "billing-eef2f.firebaseapp.com",
   databaseURL: "https://billing-eef2f-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "billing-eef2f",
