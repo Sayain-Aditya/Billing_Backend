@@ -12,13 +12,15 @@ const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
 
-router.post("/upload-images", uploadMiddleware, uploadImages);
-router.delete("/delete/:id", deleteImage);
-router.get("/all", getAllImages); // ⚠️ This gets images, not hotels
+// ----- Hotel CRUD -----
 router.post("/add", addHotel);
+router.get("/all", getAllHotels);
+router.delete("/:id", deleteHotels);
 
-router.get("/hotels", getAllHotels);
-router.delete("/hotels/:id", deleteHotels);
+// ----- Hotel Images -----
+router.post("/upload-images", uploadMiddleware.array("images", 10), uploadImages);
+router.delete("/delete-image/:id", deleteImage); // separate path to avoid conflict with hotel delete
+router.get("/images", getAllImages); // get images (optionally filter by hotelId)
 
-
+// Export router
 module.exports = router;
