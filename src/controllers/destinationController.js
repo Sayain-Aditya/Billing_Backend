@@ -1,9 +1,8 @@
-const express = require("express");
-const path = require('path');
-const fs = require('fs');
-const DestinationModel = require("../models/destination"); // ✅ Model for destinations
-const ImageModel = require("../models/dest"); // ✅ Correct model for images
+const DestinationModel = require("../models/destination");
+const ImageModel = require("../models/dest");
+const cloudinary = require("../config/cloudinary");
 
+// Upload destination images (using multer-storage-cloudinary)
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -17,27 +16,18 @@ exports.uploadImages = async (req, res) => {
       return res.status(400).json({ message: "Location ID is required" });
     }
 
-    const savedImages = [];
-
-    for (const file of files) {
-      const fileName = Date.now() + '-' + file.originalname;
-      const filePath = path.join(__dirname, '../../uploads/destinations', fileName);
-      
-      const uploadsDir = path.join(__dirname, '../../uploads/destinations');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      
-      fs.writeFileSync(filePath, file.buffer);
-
-      const newImage = await ImageModel.create({
-        url: `/uploads/destinations/${fileName}`,
-        name: file.originalname,
-        destId,
-      });
-
-      savedImages.push(newImage);
-    }
+    const savedImages = await Promise.all(
+      files.map(async (file) => {
+        // file.path -> Cloudinary URL, file.filename -> public_id
+        const newImage = await ImageModel.create({
+          url: file.path,
+          public_id: file.filename,
+          name: file.originalname,
+          destId,
+        });
+        return newImage;
+      })
+    );
 
     res.status(201).json({
       message: "Images uploaded successfully",
@@ -49,18 +39,16 @@ exports.uploadImages = async (req, res) => {
   }
 };
 
+// Delete destination image
 exports.deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
-
     const imageRecord = await ImageModel.findById(id);
-    if (!imageRecord) {
-      return res.status(404).json({ message: "Image not found" });
-    }
 
-    const filePath = path.join(__dirname, '../../', imageRecord.url);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (!imageRecord) return res.status(404).json({ message: "Image not found" });
+
+    if (imageRecord.public_id) {
+      await cloudinary.uploader.destroy(imageRecord.public_id);
     }
 
     await ImageModel.findByIdAndDelete(id);
@@ -72,68 +60,58 @@ exports.deleteImage = async (req, res) => {
   }
 };
 
+// Get all images
 exports.getAllImages = async (req, res) => {
   try {
     const { destId } = req.query;
     const filter = destId ? { destId } : {};
-
     const images = await ImageModel.find(filter).populate("destId");
-
     res.status(200).json(images);
   } catch (error) {
     console.error("❌ Fetch error:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch images", error: error.message });
+    res.status(500).json({ message: "Failed to fetch images", error: error.message });
   }
 };
 
+// Add destination
 exports.addDestination = async (req, res) => {
   try {
     const { name } = req.body;
-
-    if (!name) {
-      return res.status(400).json({ message: "Location name is required" });
-    }
+    if (!name) return res.status(400).json({ message: "Location name is required" });
 
     const existing = await DestinationModel.findOne({ name: name.trim() });
-    if (existing) {
-      return res.status(409).json({ message: "Location already exists" });
-    }
+    if (existing) return res.status(409).json({ message: "Location already exists" });
 
     const newDestination = new DestinationModel({ name: name.trim() });
     await newDestination.save();
 
-    res
-      .status(201)
-      .json({ message: "destinatin added successfully", data: newDestination });
+    res.status(201).json({ message: "Destination added successfully", data: newDestination });
   } catch (error) {
     console.error("Error in addDestination:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Get all destinations
 exports.getAllDestination = async (req, res) => {
   try {
-    const destination = await DestinationModel.find({});
-    res.status(200).json(destination);
+    const destinations = await DestinationModel.find({});
+    res.status(200).json(destinations);
   } catch (err) {
-    console.error("Error fetching destination:", err);
+    console.error("Error fetching destinations:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+// Delete destination
 exports.deleteDestination = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Check if the destination exists
     const destination = await DestinationModel.findById(id);
-    if (!destination) {
-      return res.status(404).json({ message: "Destination not found" });
-    }
 
-    // Delete only the destination
+    if (!destination) return res.status(404).json({ message: "Destination not found" });
+
     await DestinationModel.findByIdAndDelete(id);
-
     res.status(200).json({ message: "Destination deleted successfully" });
   } catch (err) {
     console.error("Error deleting destination:", err);
