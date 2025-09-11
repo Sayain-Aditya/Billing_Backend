@@ -1,9 +1,7 @@
-const express = require('express');
 const ImageModel = require('../models/common');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
 
-// Upload Images Controller (using local storage)
+// Upload Images Controller (Cloudinary)
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -12,28 +10,32 @@ exports.uploadImages = async (req, res) => {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
-    const savedImages = [];
+    // Upload all files using Promise.all
+    const savedImages = await Promise.all(
+      files.map((file) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'hotel_images' },
+            async (error, result) => {
+              if (error) return reject(error);
 
-    for (const file of files) {
-      // Save file locally
-      const fileName = Date.now() + '-' + file.originalname;
-      const filePath = path.join(__dirname, '../../uploads', fileName);
-      
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(__dirname, '../../uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      
-      fs.writeFileSync(filePath, file.buffer);
-      
-      const newImage = await ImageModel.create({
-        url: `/uploads/${fileName}`,
-        name: file.originalname,
-      });
-      
-      savedImages.push(newImage);
-    }
+              // Save image info in DB
+              try {
+                const newImage = await ImageModel.create({
+                  url: result.secure_url,
+                  public_id: result.public_id,
+                  name: file.originalname,
+                });
+                resolve(newImage);
+              } catch (dbError) {
+                reject(dbError);
+              }
+            }
+          );
+          stream.end(file.buffer);
+        });
+      })
+    );
 
     res.status(201).json({
       message: 'Images uploaded successfully',
@@ -45,7 +47,7 @@ exports.uploadImages = async (req, res) => {
   }
 };
 
-// Delete Image Controller
+// Delete Image Controller (Cloudinary)
 exports.deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -55,10 +57,8 @@ exports.deleteImage = async (req, res) => {
       return res.status(404).json({ message: 'Image not found' });
     }
 
-    // Delete local file
-    const filePath = path.join(__dirname, '../../', imageRecord.url);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (imageRecord.public_id) {
+      await cloudinary.uploader.destroy(imageRecord.public_id);
     }
 
     await ImageModel.findByIdAndDelete(id);
@@ -70,6 +70,7 @@ exports.deleteImage = async (req, res) => {
   }
 };
 
+// Get all images
 exports.getAllImages = async (req, res) => {
   try {
     const images = await ImageModel.find();

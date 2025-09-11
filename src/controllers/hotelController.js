@@ -1,9 +1,8 @@
-const express = require("express");
-const path = require('path');
-const fs = require('fs');
-const HotelModel = require("../models/hotel"); // ✅ Model for hotels
-const ImageModel = require("../models/gals"); // ✅ Correct model for images
+const HotelModel = require("../models/hotel");
+const ImageModel = require("../models/gals");
+const cloudinary = require("../config/cloudinary");
 
+// Upload hotel images
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -17,27 +16,18 @@ exports.uploadImages = async (req, res) => {
       return res.status(400).json({ message: "Hotel ID is required" });
     }
 
-    const savedImages = [];
-
-    for (const file of files) {
-      const fileName = Date.now() + '-' + file.originalname;
-      const filePath = path.join(__dirname, '../../uploads/hotels', fileName);
-      
-      const uploadsDir = path.join(__dirname, '../../uploads/hotels');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      
-      fs.writeFileSync(filePath, file.buffer);
-
-      const newImage = await ImageModel.create({
-        url: `/uploads/hotels/${fileName}`,
-        name: file.originalname,
-        hotelId,
-      });
-
-      savedImages.push(newImage);
-    }
+    const savedImages = await Promise.all(
+      files.map(async (file) => {
+        // file.path -> Cloudinary URL, file.filename -> public_id
+        const newImage = await ImageModel.create({
+          url: file.path,
+          public_id: file.filename,
+          name: file.originalname,
+          hotelId,
+        });
+        return newImage;
+      })
+    );
 
     res.status(201).json({
       message: "Images uploaded successfully",
@@ -49,18 +39,16 @@ exports.uploadImages = async (req, res) => {
   }
 };
 
+// Delete hotel image
 exports.deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
-
     const imageRecord = await ImageModel.findById(id);
-    if (!imageRecord) {
-      return res.status(404).json({ message: "Image not found" });
-    }
 
-    const filePath = path.join(__dirname, '../../', imageRecord.url);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (!imageRecord) return res.status(404).json({ message: "Image not found" });
+
+    if (imageRecord.public_id) {
+      await cloudinary.uploader.destroy(imageRecord.public_id);
     }
 
     await ImageModel.findByIdAndDelete(id);
@@ -72,46 +60,39 @@ exports.deleteImage = async (req, res) => {
   }
 };
 
+// Get all hotel images
 exports.getAllImages = async (req, res) => {
   try {
     const { hotelId } = req.query;
     const filter = hotelId ? { hotelId } : {};
-
     const images = await ImageModel.find(filter).populate("hotelId");
-
     res.status(200).json(images);
   } catch (error) {
     console.error("❌ Fetch error:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch images", error: error.message });
+    res.status(500).json({ message: "Failed to fetch images", error: error.message });
   }
 };
 
+// Add hotel
 exports.addHotel = async (req, res) => {
   try {
     const { name } = req.body;
-
-    if (!name) {
-      return res.status(400).json({ message: "Hotel name is required" });
-    }
+    if (!name) return res.status(400).json({ message: "Hotel name is required" });
 
     const existing = await HotelModel.findOne({ name: name.trim() });
-    if (existing) {
-      return res.status(409).json({ message: "Hotel already exists" });
-    }
+    if (existing) return res.status(409).json({ message: "Hotel already exists" });
 
     const newHotel = new HotelModel({ name: name.trim() });
     await newHotel.save();
 
-    res
-      .status(201)
-      .json({ message: "Hotel added successfully", data: newHotel });
+    res.status(201).json({ message: "Hotel added successfully", data: newHotel });
   } catch (error) {
     console.error("Error in addHotel:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Get all hotels
 exports.getAllHotels = async (req, res) => {
   try {
     const hotels = await HotelModel.find({});
@@ -121,19 +102,15 @@ exports.getAllHotels = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+// Delete hotel
 exports.deleteHotels = async (req, res) => {
   try {
     const { id } = req.params;
+    const hotel = await HotelModel.findById(id);
+    if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
-    // Check if the destination exists
-    const destination = await HotelModel.findById(id);
-    if (!destination) {
-      return res.status(404).json({ message: "Destination not found" });
-    }
-
-    // Delete only the destination
     await HotelModel.findByIdAndDelete(id);
-
     res.status(200).json({ message: "Hotel deleted successfully" });
   } catch (err) {
     console.error("Error deleting hotel:", err);
