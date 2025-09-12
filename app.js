@@ -50,10 +50,8 @@ const PORT = process.env.PORT || 5000;
 app.use("/billing", productRoutes);
 app.use("/invoices", invoiceformRoutes);
 app.use("/common", commonRoutes); // ✅ Only use once
-app.use("/", hotelRoutes); // ✅ Only use once
-app.use("/gals", hotelRoutes); // ✅ Only use once
-app.use("/", destinationRoutes); // ✅ Only use once
-app.use("/dest", destinationRoutes); // ✅ Only use once
+app.use("/hotels", hotelRoutes);        // hotel CRUD + hotel images
+app.use("/destinations", destinationRoutes); // destination CRUD + images
 app.use("/Iternary", iternaryRoutes); // 👈 lowercase
 app.use("/customer", Customer);
 app.use("/lead", leadRoutes);

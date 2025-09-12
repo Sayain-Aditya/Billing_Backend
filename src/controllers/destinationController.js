@@ -2,7 +2,7 @@ const DestinationModel = require("../models/destination");
 const ImageModel = require("../models/dest");
 const cloudinary = require("../config/cloudinary");
 
-// Upload destination images (using multer-storage-cloudinary)
+// Upload destination images
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -13,19 +13,17 @@ exports.uploadImages = async (req, res) => {
     }
 
     if (!destId) {
-      return res.status(400).json({ message: "Location ID is required" });
+      return res.status(400).json({ message: "Destination ID is required" });
     }
 
     const savedImages = await Promise.all(
       files.map(async (file) => {
-        // file.path -> Cloudinary URL, file.filename -> public_id
-        const newImage = await ImageModel.create({
-          url: file.path,
-          public_id: file.filename,
-          name: file.originalname,
+        return await ImageModel.create({
+          url: file.path,            // ✅ Cloudinary auto URL
+          public_id: file.filename,  // ✅ Cloudinary auto public_id
+          name: file.originalname,   // local original file name
           destId,
         });
-        return newImage;
       })
     );
 
@@ -34,7 +32,7 @@ exports.uploadImages = async (req, res) => {
       data: savedImages,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("❌ Upload error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -48,7 +46,7 @@ exports.deleteImage = async (req, res) => {
     if (!imageRecord) return res.status(404).json({ message: "Image not found" });
 
     if (imageRecord.public_id) {
-      await cloudinary.uploader.destroy(imageRecord.public_id);
+      await cloudinary.uploader.destroy(imageRecord.public_id); // ✅ delete from Cloudinary
     }
 
     await ImageModel.findByIdAndDelete(id);
@@ -87,7 +85,7 @@ exports.addDestination = async (req, res) => {
 
     res.status(201).json({ message: "Destination added successfully", data: newDestination });
   } catch (error) {
-    console.error("Error in addDestination:", error);
+    console.error("❌ Error in addDestination:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -98,7 +96,7 @@ exports.getAllDestination = async (req, res) => {
     const destinations = await DestinationModel.find({});
     res.status(200).json(destinations);
   } catch (err) {
-    console.error("Error fetching destinations:", err);
+    console.error("❌ Error fetching destinations:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -114,7 +112,7 @@ exports.deleteDestination = async (req, res) => {
     await DestinationModel.findByIdAndDelete(id);
     res.status(200).json({ message: "Destination deleted successfully" });
   } catch (err) {
-    console.error("Error deleting destination:", err);
+    console.error("❌ Error deleting destination:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
