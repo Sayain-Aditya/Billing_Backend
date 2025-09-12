@@ -1,7 +1,8 @@
 const ImageModel = require('../models/common');
 const cloudinary = require('../config/cloudinary');
 
-// Upload Images Controller (Cloudinary)
+
+// Upload Images Controller (CloudinaryStorage handles upload)
 exports.uploadImages = async (req, res) => {
   try {
     const files = req.files;
@@ -10,30 +11,14 @@ exports.uploadImages = async (req, res) => {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
-    // Upload all files using Promise.all
     const savedImages = await Promise.all(
-      files.map((file) => {
-        return new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder: 'hotel_images' },
-            async (error, result) => {
-              if (error) return reject(error);
-
-              // Save image info in DB
-              try {
-                const newImage = await ImageModel.create({
-                  url: result.secure_url,
-                  public_id: result.public_id,
-                  name: file.originalname,
-                });
-                resolve(newImage);
-              } catch (dbError) {
-                reject(dbError);
-              }
-            }
-          );
-          stream.end(file.buffer);
+      files.map(async (file) => {
+        const newImage = await ImageModel.create({
+          url: file.path,          // already uploaded URL
+          public_id: file.filename, // Cloudinary public_id
+          name: file.originalname,
         });
+        return newImage;
       })
     );
 
@@ -47,12 +32,12 @@ exports.uploadImages = async (req, res) => {
   }
 };
 
-// Delete Image Controller (Cloudinary)
+// Delete Image Controller
 exports.deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
-
     const imageRecord = await ImageModel.findById(id);
+
     if (!imageRecord) {
       return res.status(404).json({ message: 'Image not found' });
     }
@@ -65,7 +50,7 @@ exports.deleteImage = async (req, res) => {
 
     res.status(200).json({ message: 'Image deleted successfully' });
   } catch (error) {
-    console.error("❌ Error deleting image:", error);
+    console.error('Error deleting image:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
