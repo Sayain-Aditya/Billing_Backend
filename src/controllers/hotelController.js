@@ -2,10 +2,48 @@ const HotelModel = require("../models/hotel");
 const ImageModel = require("../models/gals");
 const cloudinary = require("../config/cloudinary");
 
+// // Upload hotel images
+// exports.uploadImages = async (req, res) => {
+//   try {
+//     const files = req.files;
+//     const { hotelId } = req.body;
+
+//     if (!files || files.length === 0) {
+//       return res.status(400).json({ message: "No images uploaded" });
+//     }
+
+//     if (!hotelId) {
+//       return res.status(400).json({ message: "Hotel ID is required" });
+//     }
+
+//     const savedImages = await Promise.all(
+//       files.map(async (file) => {
+//         // file.path -> Cloudinary URL, file.filename -> public_id
+//         const newImage = await ImageModel.create({
+//           url: file.path,
+//           public_id: file.filename,
+//           name: file.originalname,
+//           hotelId,
+//         });
+//         return newImage;
+//       })
+//     );
+
+//     res.status(201).json({
+//       message: "Images uploaded successfully",
+//       data: savedImages,
+//     });
+//   } catch (error) {
+//     console.error("Upload error:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
 // Upload hotel images
 exports.uploadImages = async (req, res) => {
   try {
-    const files = req.files;
+    const files = req.files || (req.file ? [req.file] : []); // ✅ support both single & multiple
+
     const { hotelId } = req.body;
 
     if (!files || files.length === 0) {
@@ -18,14 +56,12 @@ exports.uploadImages = async (req, res) => {
 
     const savedImages = await Promise.all(
       files.map(async (file) => {
-        // file.path -> Cloudinary URL, file.filename -> public_id
-        const newImage = await ImageModel.create({
-          url: file.path,
-          public_id: file.filename,
+        return await ImageModel.create({
+          url: file.path,          // Cloudinary URL
+          public_id: file.filename, // Cloudinary public_id
           name: file.originalname,
           hotelId,
         });
-        return newImage;
       })
     );
 

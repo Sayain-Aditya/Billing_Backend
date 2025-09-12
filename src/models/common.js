@@ -1,10 +1,10 @@
-// models/Image.js
 const mongoose = require("mongoose");
 
 const imageSchema = new mongoose.Schema(
   {
     url: { type: String, required: true },
-    name: { type: String, required: true }, // ✅ Add this
+    public_id: { type: String, required: true }, // ✅ Add this
+    name: { type: String, required: true },
     status: { type: Boolean, default: true },
   },
   { timestamps: true }
