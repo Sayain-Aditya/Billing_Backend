@@ -17,6 +17,7 @@ const carRoutes = require("./src/routes/carRoutes"); // ✅ Only declare once
 const userRoutes = require("./src/routes/userRoutes");
 
 
+
 const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
@@ -58,6 +59,7 @@ app.use("/lead", leadRoutes);
 
 app.use("/car", carRoutes); // ✅ Only use once
 app.use("/user", userRoutes);
+
 
 
 // Backend error handler

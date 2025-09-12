@@ -1,10 +1,7 @@
-const Lead = require("../models/lead"); // Fix variable name
-const Reminder = require('../models/reminder');
-const schedule = require('node-schedule');
-const webpush = require('../push');
+const Lead = require("../models/lead");
 
 exports.addLead = async (req, res) => {
-  console.log("Recived data:", req.body); // Fix syntax
+  console.log("Received data:", req.body);
 
   const {
     name,
@@ -17,9 +14,7 @@ exports.addLead = async (req, res) => {
     meetingdate,
     status,
     calldate,
-    // update,
     notes,
-    subscription,
   } = req.body;
 
   if (
@@ -33,9 +28,7 @@ exports.addLead = async (req, res) => {
     !meetingdate ||
     !status ||
     !calldate ||
-    // !update ||
-    !notes ||
-    !subscription
+    !notes
   ) {
     console.log("Missing Required fields");
     return res.status(400).json({
@@ -55,37 +48,11 @@ exports.addLead = async (req, res) => {
       meetingdate,
       status,
       calldate,
-      // update,
       notes,
     });
     await newLead.save();
 
-    if (subscription && followUpDate) {
-      const reminder = new Reminder({
-        leadId: newLead._id,
-        followUpDate,
-        subscription,
-        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-      });
-      await reminder.save();
-
-      // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDate), async function() {
-        try {
-          await webpush.sendNotification(
-            subscription,
-            JSON.stringify({
-              title: 'Lead Follow-up Reminder',
-              body: reminder.message,
-            })
-          );
-        } catch (err) {
-          console.error('Push notification error:', err);
-        }
-      });
-    }
-
-    res.status(201).json({ success: true, data: newLead }); // Fix typo
+    res.status(201).json({ success: true, data: newLead });
   } catch (error) {
     console.error("Error saving:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -122,6 +89,7 @@ exports.deleteLead = async (req, res) => {
     });
   }
 };
+
 exports.getLeadById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -143,6 +111,7 @@ exports.getLeadById = async (req, res) => {
     });
   }
 };
+
 exports.updateLead = async (req, res) => {
   const { id } = req.params;
   const {
@@ -156,9 +125,7 @@ exports.updateLead = async (req, res) => {
     meetingdate,
     status,
     calldate,
-    // update,
     notes,
-    subscription,
   } = req.body;
 
   try {
@@ -175,7 +142,6 @@ exports.updateLead = async (req, res) => {
         meetingdate,
         status,
         calldate,
-        // update,
         notes,
       },
       { new: true, runValidators: true }
@@ -184,31 +150,6 @@ exports.updateLead = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Lead not found",
-      });
-    }
-
-    if (subscription && followUpDate) {
-      const reminder = new Reminder({
-        leadId: updatedLead._id,
-        followUpDate,
-        subscription,
-        message: `Follow-up reminder for ${name} regarding ${enquiry}`,
-      });
-      await reminder.save();
-
-      // Schedule the notification
-      schedule.scheduleJob(new Date(followUpDate), async function() {
-        try {
-          await webpush.sendNotification(
-            subscription,
-            JSON.stringify({
-              title: 'Lead Follow-up Reminder',
-              body: reminder.message,
-            })
-          );
-        } catch (err) {
-          console.error('Push notification error:', err);
-        }
       });
     }
 
