@@ -27,11 +27,20 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow requests with no origin (mobile apps, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Allow specific origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+      
+      // Allow any Vercel deployment
+      if (origin.includes('.vercel.app')) {
+        return callback(null, true);
+      }
+      
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     optionsSuccessStatus: 204,
