@@ -15,6 +15,7 @@ const leadRoutes = require("./src/routes/leadRoutes");
 
 const carRoutes = require("./src/routes/carRoutes"); // ✅ Only declare once
 const userRoutes = require("./src/routes/userRoutes");
+const dashboardRoutes = require("./src/routes/dashboardRoutes");
 
 
 
@@ -68,7 +69,7 @@ app.use("/lead", leadRoutes);
 
 app.use("/car", carRoutes); // ✅ Only use once
 app.use("/user", userRoutes);
-
+app.use("/dashboard", dashboardRoutes);
 
 
 // Backend error handler
