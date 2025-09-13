@@ -1,16 +1,20 @@
 const express = require("express");
-const {
-  getDashboardStats,
-  getRevenueByMonth,
-  getRecentCustomers,
-  getRecentInvoices
-} = require("../controllers/dashboardController");
-
 const router = express.Router();
+const dashboardController = require("../controllers/dashboardController");
 
-router.get("/stats", getDashboardStats);           // Cards: total cars, customers, invoices, leads, products, revenue
-router.get("/revenue", getRevenueByMonth);         // Chart: revenue per month
-router.get("/recent-customers", getRecentCustomers); // Table/List: recent customers
-router.get("/recent-invoices", getRecentInvoices);   // Table/List: recent invoices
+// 📊 Overall stats (cards)
+router.get("/stats", dashboardController.getDashboardStats);
+
+// 📈 Revenue chart
+router.get("/revenue", dashboardController.getRevenueByMonth);
+
+// 👥 Recent customers
+router.get("/recent-customers", dashboardController.getRecentCustomers);
+
+// 🧾 Recent invoices
+router.get("/recent-invoices", dashboardController.getRecentInvoices);
+
+// 🗺️ Recent itineraries
+router.get("/recent-iternaries", dashboardController.getRecentIternaries);
 
 module.exports = router;

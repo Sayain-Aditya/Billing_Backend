@@ -3,6 +3,7 @@ const Customer = require("../models/customer");
 const Invoice = require("../models/invoiceForm");
 const Lead = require("../models/lead");
 const ProductDetails = require("../models/product");
+const Iternary = require("../models/Iternary");
 
 // 📊 Overall stats (for cards)
 exports.getDashboardStats = async (req, res) => {
@@ -12,6 +13,7 @@ exports.getDashboardStats = async (req, res) => {
     const totalInvoices = await Invoice.countDocuments();
     const totalLeads = await Lead.countDocuments();
     const totalProducts = await ProductDetails.countDocuments();
+    const totalIternaries = await Iternary.countDocuments(); // Added itinerary count
 
     // 💰 Total revenue from invoices
     const revenueAgg = await Invoice.aggregate([
@@ -25,6 +27,7 @@ exports.getDashboardStats = async (req, res) => {
       invoices: totalInvoices,
       leads: totalLeads,
       products: totalProducts,
+      iternaries: totalIternaries, // Added to response
       revenue: totalRevenue,
     });
   } catch (err) {
@@ -84,5 +87,19 @@ exports.getRecentInvoices = async (req, res) => {
   } catch (err) {
     console.error("❌ Invoices Error:", err);
     res.status(500).json({ error: "Failed to fetch invoices" });
+  }
+};
+
+// 📌 Recent Itineraries
+exports.getRecentIternaries = async (req, res) => {
+  try {
+    const iternaries = await Iternary.find()
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.json(iternaries);
+  } catch (err) {
+    console.error("❌ Itineraries Error:", err);
+    res.status(500).json({ error: "Failed to fetch itineraries" });
   }
 };
